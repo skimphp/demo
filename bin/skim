@@ -1,0 +1,102 @@
+#!/usr/bin/env php
+<?php declare(strict_types=1);
+
+// SKIM CLI entry point.
+// Usage: php skim <command> [args...] [--flag=value]
+// Examples:
+//   php skim migrate
+//   php skim migrate:down --steps=1
+//   php skim queue:work default --sleep=5
+//   php skim cache:clear user:
+//   php skim serve --port=8080
+
+define('SKIM_ROOT', dirname(__DIR__));
+
+require SKIM_ROOT . '/vendor/autoload.php';
+
+\Skim\Core\Env::load(SKIM_ROOT . '/.env');
+\Skim\Core\Config::load(SKIM_ROOT . '/config');
+
+// Parse argv: bin/skim command arg1 arg2 --flag=val --bool-flag
+$argv_input = array_slice($argv, 1);
+
+$command_name = array_shift($argv_input) ?? 'help';
+$args         = [];
+$flags        = [];
+
+foreach ($argv_input as $token) {
+    if (str_starts_with($token, '--')) {
+        $token = substr($token, 2);
+        if (str_contains($token, '=')) {
+            [$k, $v] = explode('=', $token, 2);
+            $flags[$k] = $v;
+        } else {
+            $flags[$token] = true;
+        }
+    } else {
+        $args[] = $token;
+    }
+}
+
+// Command map — extend via config/app.php 'commands' key
+$command_map = [
+    'migrate'       => \Skim\Cli\Commands\MigrateCommand::class,
+    'migrate:down'  => \Skim\Cli\Commands\MigrateCommand::class,
+    'migrate:fresh' => \Skim\Cli\Commands\MigrateCommand::class,
+    'migrate:status'=> \Skim\Cli\Commands\MigrateCommand::class,
+    'queue:work'    => \Skim\Cli\Commands\QueueCommand::class,
+    'queue:status'  => \Skim\Cli\Commands\QueueCommand::class,
+    'queue:flush'   => \Skim\Cli\Commands\QueueCommand::class,
+    'queue:restart' => \Skim\Cli\Commands\QueueCommand::class,
+    'cache:clear'   => \Skim\Cli\Commands\CacheCommand::class,
+    'cache:flush'   => \Skim\Cli\Commands\CacheCommand::class,
+    'serve'         => \Skim\Cli\Commands\ServeCommand::class,
+    'ide:generate'  => \Skim\Cli\Commands\IdeCommand::class,
+    'install'       => \Skim\Cli\Commands\InstallCommand::class,
+];
+
+// Sub-commands inject their name as first arg:
+// 'migrate:down' → class migrate_command, arg[0] = 'down'
+$colon = strpos($command_name, ':');
+if ($colon !== false) {
+    $sub  = substr($command_name, $colon + 1);
+    array_unshift($args, $sub);
+    $base = substr($command_name, 0, $colon);
+    $class = $command_map[$command_name] ?? ($command_map[$base] ?? null);
+} else {
+    $class = $command_map[$command_name] ?? null;
+}
+
+// User-defined commands from config
+$user_commands = \Skim\Core\Config::get('app.commands', []);
+$class         ??= $user_commands[$command_name] ?? null;
+
+if ($class === null) {
+    if ($command_name === 'help' || $command_name === 'list') {
+        \Skim\Cli\Cli::bold('SKIM Framework CLI');
+        \Skim\Cli\Cli::line();
+        \Skim\Cli\Cli::info('Available commands:');
+        foreach (array_keys($command_map) as $name) {
+            \Skim\Cli\Cli::line('  ' . $name);
+        }
+        exit(0);
+    }
+
+    \Skim\Cli\Cli::error("Unknown command: {$command_name}");
+    exit(1);
+}
+
+/** @var \Skim\Cli\Command $cmd */
+$cmd = new $class();
+$cmd->setInput($args, $flags);
+
+try {
+    $code = $cmd->handle();
+    exit((int) $code);
+} catch (\Throwable $e) {
+    \Skim\Cli\Cli::error($e->getMessage());
+    if (\Skim\Core\Config::get('app.debug')) {
+        \Skim\Cli\Cli::muted($e->getTraceAsString());
+    }
+    exit(1);
+}

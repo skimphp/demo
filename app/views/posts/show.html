@@ -1,0 +1,31 @@
+<div class="container" style="max-width:780px;">
+    <div class="mb-4">
+        <a href="/posts" class="btn btn-ghost btn-sm" style="margin-left:-.5rem;">← All Posts</a>
+    </div>
+
+    <div class="card">
+        <div style="height:6px; background:linear-gradient(90deg,var(--primary) 0%,#818cf8 100%);"></div>
+        <div class="card-body" style="padding:2rem 2.5rem;">
+            <div class="flex items-center gap-2 mb-6">
+                <span class="badge badge-green">Published</span>
+                <span class="text-xs text-muted"><?= e((string) $post->created_at) ?></span>
+            </div>
+
+            <h1 style="font-size:1.9rem; font-weight:800; letter-spacing:-.025em; line-height:1.25; margin-bottom:1.5rem;">
+                <?= e((string) $post->title) ?>
+            </h1>
+
+            <div style="font-size:.95rem; line-height:1.8; color:var(--text); white-space:pre-wrap;">
+                <?= e((string) $post->body) ?>
+            </div>
+
+            <? if (\Skim\Session\Session::has('user_id')) { ?>
+                <hr class="divider">
+                <div class="flex items-center gap-2">
+                    <a href="/admin/posts" class="btn btn-outline btn-sm">Edit in Admin</a>
+                    <span class="text-xs text-muted">Post #<?= (int) $post->id ?> · slug: <span class="font-mono"><?= e((string) $post->slug) ?></span></span>
+                </div>
+            <? } ?>
+        </div>
+    </div>
+</div>

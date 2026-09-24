@@ -1,0 +1,98 @@
+<div class="container">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <p style="font-size:.72rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--primary); margin-bottom:.3rem;">Admin</p>
+            <h1 class="section-title" style="font-size:1.5rem;">Dashboard</h1>
+        </div>
+        <div class="flex gap-2">
+            <a href="/admin/users" class="btn btn-outline btn-sm">Manage Users</a>
+            <a href="/admin/posts" class="btn btn-primary btn-sm">Manage Posts</a>
+        </div>
+    </div>
+
+    <div class="grid grid-4 mb-6">
+        <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-label">Total Users</div>
+            <div class="stat-value"><?= (int) ($stats['user_count'] ?? 0) ?></div>
+            <div class="stat-note">Registered accounts</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📝</div>
+            <div class="stat-label">Total Posts</div>
+            <div class="stat-value"><?= (int) ($stats['post_count'] ?? 0) ?></div>
+            <div class="stat-note">All statuses</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-label">Published</div>
+            <div class="stat-value" style="color:var(--success);"><?= (int) ($stats['published_count'] ?? 0) ?></div>
+            <div class="stat-note">Live on /posts</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📋</div>
+            <div class="stat-label">Drafts</div>
+            <div class="stat-value" style="color:var(--warning);"><?= (int) ($stats['draft_count'] ?? 0) ?></div>
+            <div class="stat-note">Not yet published</div>
+        </div>
+    </div>
+
+    <div class="grid grid-2">
+        <div class="card">
+            <div class="card-header">
+                <h2>Framework Subsystems</h2>
+                <span class="badge badge-green">Active</span>
+            </div>
+            <div class="card-body" style="padding:0;">
+                <? $subsystems = [
+                    ['Router',     'FastRoute + typed @params',         true],
+                    ['ORM',        'Active record + dirty tracking',    true],
+                    ['Cache',      env('CACHE_DRIVER', 'redis'),        true],
+                    ['Session',    env('APP_ENV', 'local') . ' driver', true],
+                    ['Validation', 'Built-in rules engine',             true],
+                    ['Events',     'Sync bus (emit / emit_async)',       true],
+                    ['Middleware', 'auth + cors + rate_limit',           true],
+                ]; ?>
+                <table>
+                    <tbody>
+                        <? foreach ($subsystems as [$name, $detail, $ok]) { ?>
+                            <tr>
+                                <td style="font-weight:600; font-size:.875rem;"><?= e($name) ?></td>
+                                <td class="text-muted text-sm"><?= e($detail) ?></td>
+                                <td style="text-align:right;">
+                                    <span class="badge <?= $ok ? 'badge-green' : 'badge-gray' ?>"><?= $ok ? '● ok' : '○ off' ?></span>
+                                </td>
+                            </tr>
+                        <? } ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h2>Quick Actions</h2></div>
+            <div class="card-body">
+                <div style="display:flex; flex-direction:column; gap:.75rem;">
+                    <a href="/admin/users" class="btn btn-outline" style="justify-content:space-between;">
+                        <span>👥 Manage Users</span><span style="color:var(--text-muted); font-size:.8rem;"><?= (int) ($stats['user_count'] ?? 0) ?> total</span>
+                    </a>
+                    <a href="/admin/posts" class="btn btn-outline" style="justify-content:space-between;">
+                        <span>📝 Manage Posts</span><span style="color:var(--text-muted); font-size:.8rem;"><?= (int) ($stats['post_count'] ?? 0) ?> total</span>
+                    </a>
+                    <a href="/posts" class="btn btn-outline" style="justify-content:space-between;">
+                        <span>🌐 Public Posts</span><span style="color:var(--text-muted); font-size:.8rem;">view live</span>
+                    </a>
+                    <a href="/api/posts" class="btn btn-outline" style="justify-content:space-between;">
+                        <span>📡 API /api/posts</span><span style="color:var(--text-muted); font-size:.8rem;">JSON</span>
+                    </a>
+                    <a href="/health" class="btn btn-outline" style="justify-content:space-between;">
+                        <span>💚 Health Check</span><span style="color:var(--text-muted); font-size:.8rem;">/health</span>
+                    </a>
+                    <a href="/logout" class="btn btn-ghost" style="justify-content:space-between; color:var(--error);">
+                        <span>← Sign Out</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= e($title ?? 'SKIM Demo') ?></title>
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="navbar-inner">
+        <a href="/" class="navbar-brand">
+            <span class="logo-dot"></span>
+            SKIM
+            <span class="navbar-badge">demo</span>
+        </a>
+        <div class="navbar-nav">
+            <a href="/" <?= (($_SERVER['REQUEST_URI'] ?? '') === '/') ? 'class="active"' : '' ?>>Home</a>
+            <a href="/posts" <?= str_starts_with($_SERVER['REQUEST_URI'] ?? '', '/posts') ? 'class="active"' : '' ?>>Posts</a>
+            <? if (\Skim\Session\Session::has('user_id')) { ?>
+                <a href="/admin" <?= str_starts_with($_SERVER['REQUEST_URI'] ?? '', '/admin') ? 'class="active"' : '' ?>>Admin</a>
+            <? } ?>
+            <a href="/error" <?= str_starts_with($_SERVER['REQUEST_URI'] ?? '', '/error') ? 'class="active"' : '' ?>>Error</a>
+            <a href="/health">Health</a>
+            <a href="/api/posts">API</a>
+        </div>
+        <div class="navbar-actions">
+            <? if (\Skim\Session\Session::has('user_id')) { ?>
+                <span class="text-sm text-muted"><?= e((string) \Skim\Session\Session::get('user_name', '')) ?></span>
+                <a href="/logout" class="btn btn-ghost btn-sm">Sign out</a>
+            <? } else { ?>
+                <a href="/login" class="btn btn-primary btn-sm">Sign in</a>
+            <? } ?>
+        </div>
+    </div>
+</nav>
+
+<? $flash_msg = \Skim\Session\Session::get('message'); ?>
+<? if ($flash_msg) { ?>
+    <div class="flash-wrap">
+        <div class="flash flash-success">✓ <?= e((string) $flash_msg) ?></div>
+    </div>
+<? } ?>
+
+<?= $this->slot('content') ?>
+
+<footer>
+    <p>SKIM Framework Demo &mdash; PHP 8.5+ · <a href="https://github.com" target="_blank">GitHub</a></p>
+</footer>
+
+</body>
+</html>

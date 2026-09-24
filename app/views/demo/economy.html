@@ -1,0 +1,513 @@
+<?php $this->start('content') ?>
+
+<?php $event_attr = !empty($worker_mode) ? 'data-on:input__throttle.50ms' : 'data-on:input__debounce.250ms'; ?>
+
+<link rel="stylesheet" href="/css/economy.css">
+
+<?php if (!empty($worker_mode)) { ?>
+<div class="worker-banner">
+  <div class="worker-badge">FrankenPHP Worker Mode</div>
+  <div class="worker-metrics">
+    <div class="worker-metric">
+      <span class="wm-label">Memory before reset</span>
+      <span class="wm-value"><?= number_format($metrics['mem_before'] / 1024 / 1024, 2) ?> MB</span>
+    </div>
+    <div class="worker-metric">
+      <span class="wm-label">Memory after reset</span>
+      <span class="wm-value"><?= number_format($metrics['mem_after'] / 1024 / 1024, 2) ?> MB</span>
+    </div>
+    <div class="worker-metric">
+      <span class="wm-label">Delta</span>
+      <span class="wm-value <?= $metrics['mem_delta'] > 0 ? 'wm-warn' : 'wm-ok' ?>"><?= number_format($metrics['mem_delta'] / 1024, 2) ?> KB</span>
+    </div>
+    <div class="worker-metric">
+      <span class="wm-label">Reset time</span>
+      <span class="wm-value"><?= $metrics['reset_ms'] ?> ms</span>
+    </div>
+    <div class="worker-metric">
+      <span class="wm-label">Resettable classes</span>
+      <span class="wm-value"><?= $metrics['resettable_count'] ?></span>
+    </div>
+    <div class="worker-metric">
+      <span class="wm-label">Leak detector</span>
+      <span class="wm-value <?= $metrics['leak_active'] ? 'wm-ok' : 'wm-warn' ?>"><?= $metrics['leak_active'] ? 'active' : 'off' ?></span>
+    </div>
+    <div class="worker-metric">
+      <span class="wm-label">Server latency</span>
+      <span class="wm-value" data-text="$server_latency_ms + ' ms'">0 ms</span>
+    </div>
+    <div class="worker-metric">
+      <span class="wm-label">Client latency</span>
+      <span class="wm-value" data-text="$client_latency_ms + ' ms'">0 ms</span>
+    </div>
+  </div>
+</div>
+<?php } ?>
+
+<script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0/bundles/datastar.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<div data-signals="{tax:18, pop:120, income:45, spend:32, cells:{rev:'--',cost:'--',bal:'--',debt:'--',happy:'--',energy:'--',pollut:'--',growth:'--'},status:{},trend:{},flash:{},server_latency_ms:0,client_latency_ms:0}">
+
+<div class="app-shell">
+
+  <header class="topbar">
+    <div class="topbar-logo">
+      <span class="logo-badge">SKIM</span>
+      demo
+    </div>
+    <div class="topbar-sep"></div>
+    <span class="topbar-title">City Economy Simulator</span>
+    <div class="topbar-right">
+      <div class="sse-indicator">
+        <div class="sse-dot"></div>
+        SSE live
+      </div>
+    </div>
+  </header>
+
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Input parameters</div>
+
+      <div class="input-group">
+        <div class="input-label">
+          <span>Tax rate</span>
+          <span class="input-value" data-text="$tax + '%'">18%</span>
+        </div>
+        <div class="slider-wrap">
+          <input type="range" min="5" max="40" step="1" data-bind:tax <?= $event_attr ?>="@get('/demo/economy/stream')">
+          <div class="slider-ticks"><span class="slider-tick">5%</span><span class="slider-tick">40%</span></div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">
+          <span>Population</span>
+          <span class="input-value" data-text="$pop + 'k'">120k</span>
+        </div>
+        <div class="slider-wrap">
+          <input type="range" min="50" max="500" step="10" data-bind:pop <?= $event_attr ?>="@get('/demo/economy/stream')">
+          <div class="slider-ticks"><span class="slider-tick">50k</span><span class="slider-tick">500k</span></div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">
+          <span>Avg income</span>
+          <span class="input-value" data-text="'$' + $income + 'k'">$45k</span>
+        </div>
+        <div class="slider-wrap">
+          <input type="range" min="20" max="120" step="5" data-bind:income <?= $event_attr ?>="@get('/demo/economy/stream')">
+          <div class="slider-ticks"><span class="slider-tick">$20k</span><span class="slider-tick">$120k</span></div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">
+          <span>Gov spending</span>
+          <span class="input-value" data-text="$spend + '%'">32%</span>
+        </div>
+        <div class="slider-wrap">
+          <input type="range" min="10" max="60" step="1" data-bind:spend <?= $event_attr ?>="@get('/demo/economy/stream')">
+          <div class="slider-ticks"><span class="slider-tick">10%</span><span class="slider-tick">60%</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Key metrics</div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-card-label">Budget</div>
+          <div class="kpi-card-value" id="kpi-budget" data-class="{positive: $cells.bal.startsWith('+'), negative: $cells.bal.startsWith('-')}" data-text="$cells.bal">--</div>
+          <div class="kpi-card-delta" id="kpi-budget-d" data-text="$cells.bal.startsWith('-') ? 'deficit' : 'surplus'">surplus</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card-label">Growth</div>
+          <div class="kpi-card-value" id="kpi-growth" data-class="{positive: $cells.growth.startsWith('+') || $cells.growth.startsWith('—'), negative: $cells.growth.startsWith('-')}" data-text="$cells.growth">--</div>
+          <div class="kpi-card-delta">annual</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card-label">Happiness</div>
+          <div class="kpi-card-value" data-text="$cells.happy">--</div>
+          <div class="kpi-card-delta">/ 100</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card-label">Pollution</div>
+          <div class="kpi-card-value" data-text="$cells.pollut">--</div>
+          <div class="kpi-card-delta">/ 100</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-tech-note">
+      <div class="tech-note-chip">SSE + Datastar</div>
+      <div>Server computes dependency graph on every input change and streams cell updates. No page reload, no polling.</div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <div class="formula-bar">
+      <span class="fbar-cell">B6</span>
+      <span class="fbar-sep">ƒ</span>
+      <span class="fbar-expr">= tax_rate × population × avg_income ÷ 100</span>
+      <span class="fbar-hint">click a cell to inspect</span>
+    </div>
+
+    <div class="sheet-card">
+      <div class="sheet-scroll">
+        <table class="sheet">
+          <thead>
+            <tr>
+              <th></th>
+              <th style="text-align:left">A — parameter</th>
+              <th class="input-head">B — value / input</th>
+              <th>C — revenue</th>
+              <th>D — cost</th>
+              <th>E — balance</th>
+              <th>F — status</th>
+              <th>G — trend</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Inputs section -->
+            <tr class="section-row"><td></td><td colspan="7">Inputs</td></tr>
+            <tr>
+              <td class="row-num">1</td>
+              <td><div class="cell-label">Tax rate</div></td>
+              <td class="input-cell">
+                <div class="cell-inner">
+                  <input type="range" class="cell-slider" min="5" max="40" step="1" data-bind:tax <?= $event_attr ?>="@get('/demo/economy/stream')">
+                  <span class="cell-val-display" data-text="$tax + '%'">18%</span>
+                </div>
+              </td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+            </tr>
+            <tr>
+              <td class="row-num">2</td>
+              <td><div class="cell-label">Population</div></td>
+              <td class="input-cell">
+                <div class="cell-inner">
+                  <input type="range" class="cell-slider" min="50" max="500" step="10" data-bind:pop <?= $event_attr ?>="@get('/demo/economy/stream')">
+                  <span class="cell-val-display" data-text="$pop + 'k'">120k</span>
+                </div>
+              </td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+            </tr>
+            <tr>
+              <td class="row-num">3</td>
+              <td><div class="cell-label">Avg income</div></td>
+              <td class="input-cell">
+                <div class="cell-inner">
+                  <input type="range" class="cell-slider" min="20" max="120" step="5" data-bind:income <?= $event_attr ?>="@get('/demo/economy/stream')">
+                  <span class="cell-val-display" data-text="'$' + $income + 'k'">$45k</span>
+                </div>
+              </td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+            </tr>
+            <tr>
+              <td class="row-num">4</td>
+              <td><div class="cell-label">Gov spending</div></td>
+              <td class="input-cell">
+                <div class="cell-inner">
+                  <input type="range" class="cell-slider" min="10" max="60" step="1" data-bind:spend <?= $event_attr ?>="@get('/demo/economy/stream')">
+                  <span class="cell-val-display" data-text="$spend + '%'">32%</span>
+                </div>
+              </td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+              <td><div class="cell-inner"><span style="font-size:10px;color:var(--text-muted);opacity:.5">—</span></div></td>
+            </tr>
+
+            <!-- Economy section -->
+            <tr class="section-row"><td></td><td colspan="7">Economy</td></tr>
+            <tr>
+              <td class="row-num">5</td>
+              <td><div class="cell-label">Tax revenue</div></td>
+              <td class="formula-cell" id="td-B-rev"><div class="cell-inner" id="B-rev"><span class="cell-number" data-text="$cells.rev">--</span><span class="cell-formula-hint">=tax × pop × income ÷ 100</span></div></td>
+              <td class="formula-cell" id="td-C-rev"><div class="cell-inner" id="C-rev"></div></td>
+              <td class="formula-cell" id="td-D-rev"><div class="cell-inner" id="D-rev"></div></td>
+              <td class="formula-cell" id="td-E-rev"><div class="cell-inner" id="E-rev"></div></td>
+              <td class="formula-cell" id="td-F-rev"><div class="cell-inner" id="F-rev"><span class="status-pill" data-class="{pill_ok: $status.rev === 'ok', pill_warn: $status.rev === 'warn', pill_bad: $status.rev === 'bad'}" data-text="$status.rev === 'ok' ? '✓ healthy' : ($status.rev === 'warn' ? '⚠ watch' : '✗ critical')">—</span></div></td>
+              <td class="formula-cell" id="td-G-rev"><div class="cell-inner" id="G-rev"><span data-class="{trend_up: $trend.rev.startsWith('▲'), trend_down: $trend.rev.startsWith('▼'), trend_flat: $trend.rev.startsWith('—')}" data-text="$trend.rev">—</span></div></td>
+            </tr>
+            <tr>
+              <td class="row-num">6</td>
+              <td><div class="cell-label">Gov cost</div></td>
+              <td class="formula-cell" id="td-B-cost"><div class="cell-inner" id="B-cost"><span class="cell-number" data-text="$cells.cost">--</span><span class="cell-formula-hint">=spend% × revenue × 3.1</span></div></td>
+              <td class="formula-cell" id="td-C-cost"><div class="cell-inner" id="C-cost"></div></td>
+              <td class="formula-cell" id="td-D-cost"><div class="cell-inner" id="D-cost"></div></td>
+              <td class="formula-cell" id="td-E-cost"><div class="cell-inner" id="E-cost"></div></td>
+              <td class="formula-cell" id="td-F-cost"><div class="cell-inner" id="F-cost"><span class="status-pill" data-class="{pill_ok: $status.cost === 'ok', pill_warn: $status.cost === 'warn', pill_bad: $status.cost === 'bad'}" data-text="$status.cost === 'ok' ? '✓ healthy' : ($status.cost === 'warn' ? '⚠ watch' : '✗ critical')">—</span></div></td>
+              <td class="formula-cell" id="td-G-cost"><div class="cell-inner" id="G-cost"><span data-class="{trend_up: $trend.cost.startsWith('▲'), trend_down: $trend.cost.startsWith('▼'), trend_flat: $trend.cost.startsWith('—')}" data-text="$trend.cost">—</span></div></td>
+            </tr>
+            <tr>
+              <td class="row-num">7</td>
+              <td><div class="cell-label">Budget balance</div></td>
+              <td class="formula-cell" id="td-B-bal"><div class="cell-inner" id="B-bal"><span class="cell-number" data-text="$cells.bal">--</span><span class="cell-formula-hint">=revenue − cost</span></div></td>
+              <td class="formula-cell" id="td-C-bal"><div class="cell-inner" id="C-bal"></div></td>
+              <td class="formula-cell" id="td-D-bal"><div class="cell-inner" id="D-bal"></div></td>
+              <td class="formula-cell" id="td-E-bal"><div class="cell-inner" id="E-bal"></div></td>
+              <td class="formula-cell" id="td-F-bal"><div class="cell-inner" id="F-bal"><span class="status-pill" data-class="{pill_ok: $status.bal === 'ok', pill_warn: $status.bal === 'warn', pill_bad: $status.bal === 'bad'}" data-text="$status.bal === 'ok' ? '✓ healthy' : ($status.bal === 'warn' ? '⚠ watch' : '✗ critical')">—</span></div></td>
+              <td class="formula-cell" id="td-G-bal"><div class="cell-inner" id="G-bal"><span data-class="{trend_up: $trend.bal.startsWith('▲'), trend_down: $trend.bal.startsWith('▼'), trend_flat: $trend.bal.startsWith('—')}" data-text="$trend.bal">—</span></div></td>
+            </tr>
+            <tr>
+              <td class="row-num">8</td>
+              <td><div class="cell-label">Debt ratio</div></td>
+              <td class="formula-cell" id="td-B-debt"><div class="cell-inner" id="B-debt"><span class="cell-number" data-text="$cells.debt">--</span><span class="cell-formula-hint">=max(0, −balance ÷ revenue × 100)</span></div></td>
+              <td class="formula-cell" id="td-C-debt"><div class="cell-inner" id="C-debt"></div></td>
+              <td class="formula-cell" id="td-D-debt"><div class="cell-inner" id="D-debt"></div></td>
+              <td class="formula-cell" id="td-E-debt"><div class="cell-inner" id="E-debt"></div></td>
+              <td class="formula-cell" id="td-F-debt"><div class="cell-inner" id="F-debt"><span class="status-pill" data-class="{pill_ok: $status.debt === 'ok', pill_warn: $status.debt === 'warn', pill_bad: $status.debt === 'bad'}" data-text="$status.debt === 'ok' ? '✓ healthy' : ($status.debt === 'warn' ? '⚠ watch' : '✗ critical')">—</span></div></td>
+              <td class="formula-cell" id="td-G-debt"><div class="cell-inner" id="G-debt"><span data-class="{trend_up: $trend.debt.startsWith('▲'), trend_down: $trend.debt.startsWith('▼'), trend_flat: $trend.debt.startsWith('—')}" data-text="$trend.debt">—</span></div></td>
+            </tr>
+
+            <!-- City health section -->
+            <tr class="section-row"><td></td><td colspan="7">City health</td></tr>
+            <tr>
+              <td class="row-num">9</td>
+              <td><div class="cell-label">Happiness</div></td>
+              <td class="formula-cell" id="td-B-happy"><div class="cell-inner" id="B-happy"><div class="cell-bar-wrap"><div class="cell-bar-track"><div class="cell-bar-fill" id="bar-happy" style="width:0%;background:#10b981"></div></div><span class="cell-bar-val" id="val-happy" data-text="$cells.happy">--</span></div></div></td>
+              <td class="formula-cell" id="td-C-happy"><div class="cell-inner" id="C-happy"></div></td>
+              <td class="formula-cell" id="td-D-happy"><div class="cell-inner" id="D-happy"></div></td>
+              <td class="formula-cell" id="td-E-happy"><div class="cell-inner" id="E-happy"></div></td>
+              <td class="formula-cell" id="td-F-happy"><div class="cell-inner" id="F-happy"><span class="status-pill" data-class="{pill_ok: $status.happy === 'ok', pill_warn: $status.happy === 'warn', pill_bad: $status.happy === 'bad'}" data-text="$status.happy === 'ok' ? '✓ healthy' : ($status.happy === 'warn' ? '⚠ watch' : '✗ critical')">—</span></div></td>
+              <td class="formula-cell" id="td-G-happy"><div class="cell-inner" id="G-happy"><span data-class="{trend_up: $trend.happy.startsWith('▲'), trend_down: $trend.happy.startsWith('▼'), trend_flat: $trend.happy.startsWith('—')}" data-text="$trend.happy">—</span></div></td>
+            </tr>
+            <tr>
+              <td class="row-num">10</td>
+              <td><div class="cell-label">Energy cover</div></td>
+              <td class="formula-cell" id="td-B-energy"><div class="cell-inner" id="B-energy"><div class="cell-bar-wrap"><div class="cell-bar-track"><div class="cell-bar-fill" id="bar-energy" style="width:0%;background:#6366f1"></div></div><span class="cell-bar-val" id="val-energy" data-text="$cells.energy">--</span></div></div></td>
+              <td class="formula-cell" id="td-C-energy"><div class="cell-inner" id="C-energy"></div></td>
+              <td class="formula-cell" id="td-D-energy"><div class="cell-inner" id="D-energy"></div></td>
+              <td class="formula-cell" id="td-E-energy"><div class="cell-inner" id="E-energy"></div></td>
+              <td class="formula-cell" id="td-F-energy"><div class="cell-inner" id="F-energy"><span class="status-pill" data-class="{pill_ok: $status.energy === 'ok', pill_warn: $status.energy === 'warn', pill_bad: $status.energy === 'bad'}" data-text="$status.energy === 'ok' ? '✓ healthy' : ($status.energy === 'warn' ? '⚠ watch' : '✗ critical')">—</span></div></td>
+              <td class="formula-cell" id="td-G-energy"><div class="cell-inner" id="G-energy"><span data-class="{trend_up: $trend.energy.startsWith('▲'), trend_down: $trend.energy.startsWith('▼'), trend_flat: $trend.energy.startsWith('—')}" data-text="$trend.energy">—</span></div></td>
+            </tr>
+            <tr>
+              <td class="row-num">11</td>
+              <td><div class="cell-label">Pollution</div></td>
+              <td class="formula-cell" id="td-B-pollut"><div class="cell-inner" id="B-pollut"><div class="cell-bar-wrap"><div class="cell-bar-track"><div class="cell-bar-fill" id="bar-pollut" style="width:0%;background:#ef4444"></div></div><span class="cell-bar-val" id="val-pollut" data-text="$cells.pollut">--</span></div></div></td>
+              <td class="formula-cell" id="td-C-pollut"><div class="cell-inner" id="C-pollut"></div></td>
+              <td class="formula-cell" id="td-D-pollut"><div class="cell-inner" id="D-pollut"></div></td>
+              <td class="formula-cell" id="td-E-pollut"><div class="cell-inner" id="E-pollut"></div></td>
+              <td class="formula-cell" id="td-F-pollut"><div class="cell-inner" id="F-pollut"><span class="status-pill" data-class="{pill_ok: $status.pollut === 'ok', pill_warn: $status.pollut === 'warn', pill_bad: $status.pollut === 'bad'}" data-text="$status.pollut === 'ok' ? '✓ healthy' : ($status.pollut === 'warn' ? '⚠ watch' : '✗ critical')">—</span></div></td>
+              <td class="formula-cell" id="td-G-pollut"><div class="cell-inner" id="G-pollut"><span data-class="{trend_up: $trend.pollut.startsWith('▲'), trend_down: $trend.pollut.startsWith('▼'), trend_flat: $trend.pollut.startsWith('—')}" data-text="$trend.pollut">—</span></div></td>
+            </tr>
+            <tr>
+              <td class="row-num">12</td>
+              <td><div class="cell-label">Growth rate</div></td>
+              <td class="formula-cell" id="td-B-growth"><div class="cell-inner" id="B-growth"><span class="cell-number" data-text="$cells.growth">--</span><span class="cell-formula-hint">=f(balance, tax, spend)</span></div></td>
+              <td class="formula-cell" id="td-C-growth"><div class="cell-inner" id="C-growth"></div></td>
+              <td class="formula-cell" id="td-D-growth"><div class="cell-inner" id="D-growth"></div></td>
+              <td class="formula-cell" id="td-E-growth"><div class="cell-inner" id="E-growth"></div></td>
+              <td class="formula-cell" id="td-F-growth"><div class="cell-inner" id="F-growth"><span class="status-pill" data-class="{pill_ok: $status.growth === 'ok', pill_warn: $status.growth === 'warn', pill_bad: $status.growth === 'bad'}" data-text="$status.growth === 'ok' ? '✓ healthy' : ($status.growth === 'warn' ? '⚠ watch' : '✗ critical')">—</span></div></td>
+              <td class="formula-cell" id="td-G-growth"><div class="cell-inner" id="G-growth"><span data-class="{trend_up: $trend.growth.startsWith('▲'), trend_down: $trend.growth.startsWith('▼'), trend_flat: $trend.growth.startsWith('—')}" data-text="$trend.growth">—</span></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card"><div class="chart-card-label">Budget balance over time</div><canvas id="chart-budget" height="80"></canvas></div>
+      <div class="chart-card"><div class="chart-card-label">City health indicators</div><canvas id="chart-health" height="80"></canvas></div>
+      <div class="chart-card"><div class="chart-card-label">Revenue vs spending</div><canvas id="chart-rev" height="80"></canvas></div>
+    </div>
+
+    <div class="event-log">
+      <div class="event-log-header"><span>SSE stream</span><div class="sse-dot" style="margin-left:auto"></div></div>
+      <div class="event-log-body" id="event-log"></div>
+    </div>
+
+  </main>
+</div>
+
+</div>
+
+<script>
+(function() {
+    const HIST_LEN = 20;
+    const budgetHistory = Array(HIST_LEN).fill(0);
+    const healthHistory = { happy: Array(HIST_LEN).fill(72), energy: Array(HIST_LEN).fill(80), pollut: Array(HIST_LEN).fill(28) };
+    const revHistory  = Array(HIST_LEN).fill(0);
+    const costHistory = Array(HIST_LEN).fill(0);
+
+    const chartDefaults = {
+        responsive: true,
+        animation: { duration: 300 },
+        plugins: { legend: { display: false } },
+        scales: { x: { display: false }, y: { display: false } },
+        elements: { point: { radius: 0 } }
+    };
+
+    const budgetChart = new Chart(document.getElementById('chart-budget'), {
+        type: 'line',
+        data: { labels: Array(HIST_LEN).fill(''), datasets: [{ data: [...budgetHistory], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.08)', fill: true, tension: 0.4, borderWidth: 1.5 }] },
+        options: { ...chartDefaults }
+    });
+
+    const healthChart = new Chart(document.getElementById('chart-health'), {
+        type: 'line',
+        data: { labels: Array(HIST_LEN).fill(''), datasets: [
+            { data: [...healthHistory.happy],  borderColor: '#10b981', borderWidth: 1.5, tension: 0.4, fill: false },
+            { data: [...healthHistory.energy], borderColor: '#6366f1', borderWidth: 1.5, tension: 0.4, fill: false },
+            { data: [...healthHistory.pollut], borderColor: '#ef4444', borderWidth: 1.5, tension: 0.4, fill: false },
+        ] },
+        options: { ...chartDefaults }
+    });
+
+    const revChart = new Chart(document.getElementById('chart-rev'), {
+        type: 'bar',
+        data: { labels: Array(HIST_LEN).fill(''), datasets: [
+            { data: [...revHistory],  backgroundColor: 'rgba(99,102,241,.5)',  borderRadius: 2 },
+            { data: [...costHistory], backgroundColor: 'rgba(239,68,68,.4)',   borderRadius: 2 },
+        ] },
+        options: { ...chartDefaults, scales: { x: { display: false, stacked: false }, y: { display: false } } }
+    });
+
+    function pushHistory(vals) {
+        budgetHistory.push(vals.bal); budgetHistory.shift();
+        healthHistory.happy.push(vals.happy);   healthHistory.happy.shift();
+        healthHistory.energy.push(vals.energy); healthHistory.energy.shift();
+        healthHistory.pollut.push(vals.pollut); healthHistory.pollut.shift();
+        revHistory.push(vals.rev);   revHistory.shift();
+        costHistory.push(vals.cost); costHistory.shift();
+
+        budgetChart.data.datasets[0].data = [...budgetHistory];
+        budgetChart.update('none');
+
+        healthChart.data.datasets[0].data = [...healthHistory.happy];
+        healthChart.data.datasets[1].data = [...healthHistory.energy];
+        healthChart.data.datasets[2].data = [...healthHistory.pollut];
+        healthChart.update('none');
+
+        revChart.data.datasets[0].data = [...revHistory];
+        revChart.data.datasets[1].data = [...costHistory];
+        revChart.update('none');
+    }
+
+    function parseRaw(id, fmt) {
+        if (fmt === undefined) return null;
+        const s = String(fmt).replace(/[^0-9.\-]/g, '');
+        if (id === 'happy' || id === 'energy' || id === 'pollut') return parseInt(s, 10);
+        if (id === 'growth' || id === 'debt') return parseFloat(s);
+        return parseFloat(s);
+    }
+
+    // ── read current cell values from DOM (Datastar has already updated them) ──
+    function readCells() {
+        const out = {};
+        ['rev','cost','bal','debt','happy','energy','pollut','growth'].forEach(id => {
+            const el = document.getElementById('B-' + id);
+            if (el) {
+                const num = el.querySelector('.cell-number, .cell-bar-val');
+                if (num) out[id] = num.textContent;
+            }
+        });
+        return out;
+    }
+
+    // ── charts + bars driven by DOM mutations (Datastar updates DOM via SSE) ──
+    let lastCells = {};
+    let syncT = null;
+    function syncFromDom() {
+        clearTimeout(syncT);
+        syncT = setTimeout(function() {
+            const cells = readCells();
+            if (!cells.bal) return;
+
+            const changed = ['bal','happy','energy','pollut','rev','cost'].some(function(k) { return cells[k] !== lastCells[k]; });
+            if (changed) {
+                pushHistory({
+                    bal:    parseRaw('bal',    cells.bal)    ?? budgetHistory[HIST_LEN-1],
+                    happy:  parseRaw('happy',  cells.happy)  ?? healthHistory.happy[HIST_LEN-1],
+                    energy: parseRaw('energy', cells.energy) ?? healthHistory.energy[HIST_LEN-1],
+                    pollut: parseRaw('pollut', cells.pollut) ?? healthHistory.pollut[HIST_LEN-1],
+                    rev:    parseRaw('rev',    cells.rev)    ?? revHistory[HIST_LEN-1],
+                    cost:   parseRaw('cost',   cells.cost)   ?? costHistory[HIST_LEN-1],
+                });
+            }
+
+            // bars
+            const barMap = { happy: 'bar-happy', energy: 'bar-energy', pollut: 'bar-pollut' };
+            Object.keys(barMap).forEach(function(id) {
+                const v = parseRaw(id, cells[id]);
+                if (v !== null) {
+                    const bar = document.getElementById(barMap[id]);
+                    if (bar) bar.style.width = Math.min(100, Math.max(0, v)) + '%';
+                }
+            });
+
+            lastCells = cells;
+        }, 30);
+    }
+
+    // ── flash + chart sync via MutationObserver on tbody ──
+    const waveMap = { rev:1, cost:2, bal:3, debt:3, happy:4, energy:4, pollut:5, growth:5 };
+    const lastFlash = {};
+
+    const mo = new MutationObserver(function(muts) {
+        muts.forEach(function(m) {
+            const el = m.target;
+            // find which cell changed
+            let cellId = null;
+            if (el.id && el.id.startsWith('B-')) cellId = el.id.slice(2);
+            else {
+                const p = el.closest && el.closest('[id^="B-"]');
+                if (p) cellId = p.id.slice(2);
+            }
+            if (!cellId) return;
+
+            const val = el.textContent;
+            if (lastFlash[cellId] !== val) {
+                lastFlash[cellId] = val;
+                const wave = waveMap[cellId] || 1;
+                ['B','F','G'].forEach(function(col) {
+                    const td = document.getElementById('td-' + col + '-' + cellId);
+                    if (!td) return;
+                    td.className = td.className.replace(/flash-\d/g, '').trim();
+                    void td.offsetWidth;
+                    td.classList.add('flash-' + Math.min(6, wave));
+                });
+            }
+        });
+        // debounce chart sync to batch all cell mutations of one wave
+        syncFromDom();
+    });
+
+    const tbody = document.querySelector('table.sheet tbody');
+    if (tbody) mo.observe(tbody, { childList: true, subtree: true, characterData: true });
+
+    // ── formula bar click handler ──
+    const fbarExpr = document.querySelector('.fbar-expr');
+    const fbarHint = document.querySelector('.fbar-hint');
+    document.querySelectorAll('.formula-cell').forEach(function(td) {
+        td.addEventListener('click', function() {
+            const hint = td.querySelector('.cell-formula-hint');
+            if (hint) {
+                fbarExpr.textContent = hint.textContent;
+                fbarHint.textContent = '';
+            }
+        });
+    });
+})();
+</script>
+
+<?php $this->end() ?>

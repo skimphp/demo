@@ -1,0 +1,23 @@
+{
+  "name": "skim/demo",
+  "description": "SKIM Framework — demo application (SSE, auth, mailer, queue examples)",
+  "type": "project",
+  "license": "MIT",
+  "require": {
+    "php": "^8.5",
+    "skim/framework": "^0.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/"
+    }
+  },
+  "require-dev": {
+    "pestphp/pest": "^3.0"
+  },
+  "config": {
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
+  }
+}

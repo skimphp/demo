@@ -1,0 +1,98 @@
+<? $errors = \Skim\Session\Session::get('errors') ?? []; ?>
+<div class="container">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <p style="font-size:.72rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--primary); margin-bottom:.3rem;">
+                <a href="/admin" style="color:inherit; text-decoration:none;">Admin</a> / Posts
+            </p>
+            <h1 class="section-title" style="font-size:1.5rem;">Posts</h1>
+        </div>
+        <a href="#add-post" class="btn btn-primary btn-sm">+ New Post</a>
+    </div>
+
+    <div class="card mb-6">
+        <div class="card-header">
+            <h2>All Posts (<?= count($posts) ?>)</h2>
+        </div>
+        <div class="table-wrap">
+            <? if (empty($posts)) { ?>
+                <div class="card-body" style="text-align:center; color:var(--text-muted);">No posts yet — create one below.</div>
+            <? } else { ?>
+                <table>
+                    <thead>
+                        <tr><th>#</th><th>Title</th><th>Slug</th><th>Status</th><th>Created</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        <? foreach ($posts as $post) { ?>
+                            <tr>
+                                <td class="text-muted text-xs font-mono"><?= (int) $post->id ?></td>
+                                <td>
+                                    <a href="/admin/posts/<?= (int) $post->id ?>" style="font-weight:600; color:var(--text); text-decoration:none;">
+                                        <?= e((string) $post->title) ?>
+                                    </a>
+                                </td>
+                                <td class="text-xs text-muted font-mono"><?= e((string) $post->slug) ?></td>
+                                <td>
+                                    <span class="badge <?= $post->status === 'published' ? 'badge-green' : 'badge-yellow' ?>">
+                                        <?= e((string) $post->status) ?>
+                                    </span>
+                                </td>
+                                <td class="text-xs text-muted"><?= e((string) $post->created_at) ?></td>
+                                <td class="text-right">
+                                    <form method="POST" action="/admin/posts/<?= (int) $post->id ?>/delete"
+                                          onsubmit="return confirm('Delete this post?')">
+                                        <button type="submit" class="btn btn-ghost btn-xs" style="color:var(--error);">✕</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <? } ?>
+                    </tbody>
+                </table>
+            <? } ?>
+        </div>
+    </div>
+
+    <div class="card" id="add-post">
+        <div class="card-header"><h2>New Post</h2></div>
+        <div class="card-body">
+            <? if (!empty($errors)) { ?>
+                <div class="alert" style="background:var(--error-light); color:#991b1b; border-color:#fecaca;">
+                    <ul>
+                        <? foreach ($errors as $field_errors) { ?>
+                            <? foreach ((array) $field_errors as $msg) { ?>
+                                <li><?= e((string) $msg) ?></li>
+                            <? } ?>
+                        <? } ?>
+                    </ul>
+                </div>
+            <? } ?>
+
+            <form method="POST" action="/admin/posts">
+                <div class="grid grid-2" style="gap:1rem; margin-bottom:1rem;">
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label" for="p-title">Title</label>
+                        <input id="p-title" name="title" type="text" class="form-input" placeholder="My First Post" required>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label" for="p-status">Status</label>
+                        <select id="p-status" name="status" class="form-select">
+                            <option value="draft">Draft</option>
+                            <option value="published">Published</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="p-body">Body</label>
+                    <textarea id="p-body" name="body" class="form-textarea" placeholder="Write your post content here…" required></textarea>
+                </div>
+                <div class="flex items-center justify-between">
+                    <button type="submit" class="btn btn-primary">Save Post</button>
+                    <p class="text-xs text-muted">
+                        Slug auto-generated · <span class="tag-code">post_published_event</span> fired on publish ·
+                        <span class="tag-code">cache::delete('posts:published')</span>
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

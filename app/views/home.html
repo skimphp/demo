@@ -1,0 +1,131 @@
+<div class="hero">
+    <div class="hero-eyebrow">⚡ PHP 8.5+ Micro-Framework</div>
+    <h1>Build fast with<br><em>SKIM Framework</em></h1>
+    <p>A minimal, explicit, composable PHP framework — zero magic, real stack traces, and native PHP templates that run 3× faster than Blade.</p>
+    <div class="hero-actions">
+        <a href="/posts" class="btn btn-primary">Browse Posts →</a>
+        <a href="/api/posts" class="btn btn-outline">API Endpoints</a>
+        <a href="/login" class="btn btn-ghost">Admin Panel</a>
+    </div>
+</div>
+
+<div class="section">
+    <div class="max-w">
+        <p class="section-eyebrow">Framework Modules</p>
+        <h2 class="section-title">Everything wired up</h2>
+        <p class="section-desc">All SKIM subsystems are exercised in this demo — click any card to see it in action.</p>
+
+        <div class="grid grid-4">
+            <a href="/posts" style="text-decoration:none; color:inherit;">
+                <div class="feature-card">
+                    <span class="feature-icon">🗄️</span>
+                    <h3>Router + Controller</h3>
+                    <p>FastRoute-powered router with <code>@id:int</code> typed params, group middleware, and DI injection.</p>
+                    <div class="feature-tags">
+                        <span class="tag-code">router::dispatch()</span>
+                        <span class="tag-code">@id:int</span>
+                    </div>
+                </div>
+            </a>
+            <a href="/posts" style="text-decoration:none; color:inherit;">
+                <div class="feature-card">
+                    <span class="feature-icon">💾</span>
+                    <h3>ORM + query_gen</h3>
+                    <p>Active-record models with dirty tracking and dynamic SQL via <code>%placeholder%</code>.</p>
+                    <div class="feature-tags">
+                        <span class="tag-code">post::where()</span>
+                        <span class="tag-code">%where%</span>
+                    </div>
+                </div>
+            </a>
+            <div class="feature-card">
+                <span class="feature-icon">⚡</span>
+                <h3>Cache</h3>
+                <p>Redis-first with file fallback. Posts list is cached with <code>cache::remember()</code> and invalidated on write.</p>
+                <div class="feature-tags">
+                    <span class="tag-code">cache::remember()</span>
+                    <span class="tag-code">cache::delete()</span>
+                </div>
+            </div>
+            <a href="/login" style="text-decoration:none; color:inherit;">
+                <div class="feature-card">
+                    <span class="feature-icon">🔐</span>
+                    <h3>Session + Auth</h3>
+                    <p>Redis-backed sessions with flash messages, regeneration on login/logout, and auth middleware.</p>
+                    <div class="feature-tags">
+                        <span class="tag-code">session::flash()</span>
+                        <span class="tag-code">auth_middleware</span>
+                    </div>
+                </div>
+            </a>
+            <a href="/admin/users" style="text-decoration:none; color:inherit;">
+                <div class="feature-card">
+                    <span class="feature-icon">✅</span>
+                    <h3>Validation</h3>
+                    <p>Chainable rules engine — <code>required|email|min_len:6</code> — returns typed result with per-field errors.</p>
+                    <div class="feature-tags">
+                        <span class="tag-code">validate::make()</span>
+                        <span class="tag-code">result::ok()</span>
+                    </div>
+                </div>
+            </a>
+            <div class="feature-card">
+                <span class="feature-icon">📡</span>
+                <h3>Events</h3>
+                <p>Typed event objects emitted on user creation and post publish. Sync + async via queue.</p>
+                <div class="feature-tags">
+                    <span class="tag-code">event::emit()</span>
+                    <span class="tag-code">user_created_event</span>
+                </div>
+            </div>
+            <a href="/api/posts" style="text-decoration:none; color:inherit;">
+                <div class="feature-card">
+                    <span class="feature-icon">🌐</span>
+                    <h3>JSON API</h3>
+                    <p>Clean JSON responses for <code>/api/posts</code> and <code>/api/users</code> with pagination meta.</p>
+                    <div class="feature-tags">
+                        <span class="tag-code">$res->json()</span>
+                        <span class="tag-code">/api/posts</span>
+                    </div>
+                </div>
+            </a>
+            <div class="feature-card">
+                <span class="feature-icon">🧩</span>
+                <h3>Views + Fragments</h3>
+                <p>Native PHP templates with layout slots. HTMX-aware <code>smart_view()</code> returns fragments on partial requests.</p>
+                <div class="feature-tags">
+                    <span class="tag-code">smart_view()</span>
+                    <span class="tag-code">@fragment</span>
+                </div>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; box-shadow:var(--shadow);">
+            <p class="section-eyebrow">Quick API</p>
+            <h2 class="section-title" style="margin-bottom:.75rem;">Try the endpoints</h2>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:.75rem;">
+                <? foreach ([
+                    ['GET', '/health',    'Framework health check'],
+                    ['GET', '/api/posts', 'Published posts (JSON)'],
+                    ['GET', '/api/users', 'Users list (JSON)'],
+                    ['GET', '/posts',     'Posts index (HTML)'],
+                    ['GET', '/admin',     'Admin dashboard'],
+                    ['GET', '/login',     'Auth demo'],
+                ] as [$method, $path, $desc]) { ?>
+                    <a href="<?= e($path) ?>" style="text-decoration:none;">
+                        <div style="display:flex; align-items:center; gap:.75rem; padding:.75rem 1rem; border:1px solid var(--border); border-radius:8px; transition:background .15s; background:var(--bg);"
+                             onmouseover="this.style.background='var(--primary-50)'" onmouseout="this.style.background='var(--bg)'">
+                            <span style="background:var(--success-light); color:#065f46; font-size:.65rem; font-weight:700; padding:.2rem .5rem; border-radius:4px; font-family:monospace; flex-shrink:0;"><?= e($method) ?></span>
+                            <div>
+                                <div style="font-size:.82rem; font-weight:600; font-family:monospace; color:var(--text);"><?= e($path) ?></div>
+                                <div style="font-size:.75rem; color:var(--text-muted);"><?= e($desc) ?></div>
+                            </div>
+                        </div>
+                    </a>
+                <? } ?>
+            </div>
+        </div>
+    </div>
+</div>

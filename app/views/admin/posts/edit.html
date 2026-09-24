@@ -1,0 +1,64 @@
+<? $errors = \Skim\Session\Session::get('errors') ?? []; ?>
+<div class="container">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <p style="font-size:.72rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--primary); margin-bottom:.3rem;">
+                <a href="/admin" style="color:inherit; text-decoration:none;">Admin</a> /
+                <a href="/admin/posts" style="color:inherit; text-decoration:none;">Posts</a> / Edit
+            </p>
+            <h1 class="section-title" style="font-size:1.5rem;">Edit Post</h1>
+        </div>
+    </div>
+
+    <div class="card" style="max-width:720px;">
+        <div class="card-header">
+            <h2>#<?= (int) $post->id ?> · <?= e((string) $post->title) ?></h2>
+        </div>
+        <div class="card-body">
+            <? if (!empty($errors)) { ?>
+                <div class="alert" style="background:var(--error-light); color:#991b1b; border-color:#fecaca; margin-bottom:1rem;">
+                    <ul>
+                        <? foreach ($errors as $field_errors) { ?>
+                            <? foreach ((array) $field_errors as $msg) { ?>
+                                <li><?= e((string) $msg) ?></li>
+                            <? } ?>
+                        <? } ?>
+                    </ul>
+                </div>
+            <? } ?>
+
+            <form method="POST" action="/admin/posts/<?= (int) $post->id ?>">
+                <div class="form-group" style="margin-bottom:1rem;">
+                    <label class="form-label" for="p-title">Title</label>
+                    <input id="p-title" name="title" type="text" class="form-input"
+                           value="<?= e((string) $post->title) ?>" required>
+                </div>
+
+                <div class="form-group" style="margin-bottom:1rem;">
+                    <label class="form-label" for="p-slug">Slug</label>
+                    <input id="p-slug" type="text" class="form-input" disabled
+                           value="<?= e((string) $post->slug) ?>">
+                    <p class="text-xs text-muted mt-1">Slug is auto-generated from the title.</p>
+                </div>
+
+                <div class="form-group" style="margin-bottom:1rem;">
+                    <label class="form-label" for="p-body">Body</label>
+                    <textarea id="p-body" name="body" class="form-textarea" rows="10" required><?= e((string) $post->body) ?></textarea>
+                </div>
+
+                <div class="form-group" style="margin-bottom:1.5rem;">
+                    <label class="form-label" for="p-status">Status</label>
+                    <select id="p-status" name="status" class="form-select">
+                        <option value="draft" <?= $post->status === 'draft' ? 'selected' : '' ?>>Draft</option>
+                        <option value="published" <?= $post->status === 'published' ? 'selected' : '' ?>>Published</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <button type="submit" class="btn btn-primary">Update Post</button>
+                    <a href="/admin/posts" class="btn btn-ghost">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

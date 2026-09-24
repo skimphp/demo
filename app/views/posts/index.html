@@ -1,0 +1,46 @@
+<div class="container">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="section-title" style="font-size:1.5rem;">Posts</h1>
+            <p class="text-muted text-sm">Public published posts — cached with <span class="tag-code">cache::remember()</span></p>
+        </div>
+        <? if (\Skim\Session\Session::has('user_id')) { ?>
+            <a href="/admin/posts" class="btn btn-primary btn-sm">+ New Post</a>
+        <? } ?>
+    </div>
+
+    <!-- @fragment posts-list -->
+    <? if (empty($posts)) { ?>
+        <div class="card">
+            <div class="card-body" style="text-align:center; padding:3rem;">
+                <p style="font-size:2rem; margin-bottom:.75rem;">📭</p>
+                <p class="text-muted">No published posts yet.</p>
+                <? if (\Skim\Session\Session::has('user_id')) { ?>
+                    <a href="/admin/posts" class="btn btn-primary btn-sm mt-4">Create the first post</a>
+                <? } ?>
+            </div>
+        </div>
+    <? } else { ?>
+        <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(320px,1fr));">
+            <? foreach ($posts as $post) { ?>
+                <a href="/posts/<?= (int) $post->id ?>" style="text-decoration:none; color:inherit;">
+                    <div class="card" style="height:100%; transition:box-shadow .2s,transform .2s; cursor:pointer;"
+                         onmouseover="this.style.boxShadow='var(--shadow-md)'; this.style.transform='translateY(-2px)'"
+                         onmouseout="this.style.boxShadow=''; this.style.transform=''">
+                        <div style="height:6px; background:linear-gradient(90deg,var(--primary) 0%,#818cf8 100%);"></div>
+                        <div class="card-body">
+                            <div class="flex items-center gap-2 mb-4">
+                                <span class="badge badge-green">Published</span>
+                                <span class="text-xs text-muted"><?= e((string) $post->created_at) ?></span>
+                            </div>
+                            <h2 style="font-size:1rem; font-weight:700; margin-bottom:.5rem; line-height:1.4;"><?= e((string) $post->title) ?></h2>
+                            <p class="text-sm text-muted"><?= e($post->excerpt(130)) ?></p>
+                            <div class="mt-4" style="font-size:.8rem; color:var(--primary); font-weight:600;">Read more →</div>
+                        </div>
+                    </div>
+                </a>
+            <? } ?>
+        </div>
+    <? } ?>
+    <!-- @end -->
+</div>

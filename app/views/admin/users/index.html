@@ -1,0 +1,104 @@
+<? $errors = \Skim\Session\Session::get('errors') ?? []; ?>
+<div class="container">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <p style="font-size:.72rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--primary); margin-bottom:.3rem;">
+                <a href="/admin" style="color:inherit; text-decoration:none;">Admin</a> / Users
+            </p>
+            <h1 class="section-title" style="font-size:1.5rem;">Users</h1>
+        </div>
+        <a href="#add-user" class="btn btn-primary btn-sm">+ Add User</a>
+    </div>
+
+    <div class="grid grid-2" style="align-items:start;">
+
+        <div class="card">
+            <div class="card-header">
+                <h2>All Users (<?= count($users) ?>)</h2>
+            </div>
+            <div class="table-wrap">
+                <? if (empty($users)) { ?>
+                    <div class="card-body" style="text-align:center; color:var(--text-muted);">No users yet.</div>
+                <? } else { ?>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <? foreach ($users as $u) { ?>
+                                <? $role_badge = match($u->role) {
+                                    'admin'  => 'badge-indigo',
+                                    'editor' => 'badge-yellow',
+                                    default  => 'badge-gray',
+                                }; ?>
+                                <tr>
+                                    <td style="font-weight:600;"><?= e((string) $u->name) ?></td>
+                                    <td class="text-muted"><?= e((string) $u->email) ?></td>
+                                    <td><span class="badge <?= $role_badge ?>"><?= e((string) $u->role) ?></span></td>
+                                    <td class="text-xs text-muted"><?= e((string) $u->created_at) ?></td>
+                                    <td class="text-right">
+                                        <form method="POST" action="/admin/users/<?= (int) $u->id ?>/delete"
+                                              onsubmit="return confirm('Delete <?= e((string) $u->name) ?>?')">
+                                            <button type="submit" class="btn btn-ghost btn-xs" style="color:var(--error);">✕</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <? } ?>
+                        </tbody>
+                    </table>
+                <? } ?>
+            </div>
+        </div>
+
+        <div class="card" id="add-user">
+            <div class="card-header"><h2>Add User</h2></div>
+            <div class="card-body">
+                <? if (!empty($errors)) { ?>
+                    <div class="alert" style="background:var(--error-light); color:#991b1b; border-color:#fecaca;">
+                        <ul>
+                            <? foreach ($errors as $field_errors) { ?>
+                                <? foreach ((array) $field_errors as $msg) { ?>
+                                    <li><?= e((string) $msg) ?></li>
+                                <? } ?>
+                            <? } ?>
+                        </ul>
+                    </div>
+                <? } ?>
+
+                <form method="POST" action="/admin/users">
+                    <div class="form-group">
+                        <label class="form-label" for="u-name">Name</label>
+                        <input id="u-name" name="name" type="text" class="form-input" placeholder="Jane Smith" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="u-email">Email</label>
+                        <input id="u-email" name="email" type="email" class="form-input" placeholder="jane@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="u-password">Password</label>
+                        <input id="u-password" name="password" type="password" class="form-input" placeholder="Min 6 chars" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="u-role">Role</label>
+                        <select id="u-role" name="role" class="form-select">
+                            <option value="viewer">Viewer</option>
+                            <option value="editor">Editor</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Create User</button>
+                </form>
+
+                <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border);">
+                    <p class="text-xs text-muted">
+                        Validated via <span class="tag-code">validate::make()</span> ·
+                        Password hashed via <span class="tag-code">password_hash()</span> ·
+                        <span class="tag-code">user_created_event</span> emitted
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
